@@ -1,0 +1,47 @@
+{
+  "name": "salesavvy-backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "ts-node src/index.ts",
+    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "build": "mkdir -p dist && tsc",
+    "build:watch": "mkdir -p dist && tsc --watch",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@emailjs/nodejs": "^5.0.2",
+    "axios": "^1.10.0",
+    "bcrypt": "^6.0.0",
+    "cheerio": "^1.1.2",
+    "cors": "^2.8.5",
+    "dotenv": "^17.0.1",
+    "express": "^5.1.0",
+    "express-async-handler": "^1.2.0",
+    "fs": "^0.0.1-security",
+    "multer": "^2.0.2",
+    "node-cron": "^4.2.1",
+    "path": "^0.12.7",
+    "puppeteer": "^24.26.1",
+    "puppeteer-core": "^24.26.1",
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^24.0.10",
+    "@types/puppeteer": "^7.0.4",
+    "@types/xlsx": "^0.0.36"
+  },
+  "engines": {
+    "node": ">=18 <23"
+  }
+}
