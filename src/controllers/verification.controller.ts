@@ -1,8 +1,10 @@
 import { Request, Response } from "express";
 import axios from "axios";
 import * as XLSX from "xlsx";
-import fs from "fs";
-import path from "path";
+
+interface UpdatedRequest extends Request {
+  file?: any;
+}
 
 const API_URL =
   "https://verify.licence.nsw.gov.au/publicregisterapi/api/v1/licence/search/bulk";
@@ -24,13 +26,15 @@ async function fetchBatch(licenses: string[]) {
   return res.data;
 }
 
-export const verifyLicences = async (req: Request, res: Response) => {
+export const verifyLicences = async (req: UpdatedRequest, res: Response) => {
   try {
-    if (!req.file) {
+    if (!req?.file) {
       return res.status(400).json({ error: "Please upload a .txt file" });
     }
 
-    const filePath = req.file.path;
+    const filePath = req?.file.path;
+
+    /*This chunk support TXT Files
     const fileContent = fs.readFileSync(filePath, "utf-8");
 
     // clean + unique license numbers
@@ -41,6 +45,40 @@ export const verifyLicences = async (req: Request, res: Response) => {
           .map((line) => line.trim())
           .filter(Boolean)
       )
+    );
+    */
+    // read first sheet from XLSX
+    const workbookLoad = XLSX.readFile(filePath);
+    const sheetName = workbookLoad.SheetNames[0];
+    if (!sheetName) {
+      return res
+        .status(400)
+        .json({ error: "Uploaded Excel file has no sheets" });
+    }
+    const sheet = workbookLoad.Sheets[sheetName];
+
+    // get rows as 2D array
+    const rows: any[][] = XLSX.utils.sheet_to_json(sheet, {
+      header: 1,
+      raw: false,
+    });
+
+    // take first column only; drop an obvious header if present
+    let firstCol = rows
+      .map((r) => (Array.isArray(r) ? r[0] : undefined))
+      .filter((v) => v !== undefined);
+
+    if (
+      firstCol.length > 0 &&
+      typeof firstCol[0] === "string" &&
+      /licen[cs]e/i.test(firstCol[0]) // "license"/"licence"
+    ) {
+      firstCol = firstCol.slice(1);
+    }
+
+    // clean + unique license numbers
+    const licenseNumbers = Array.from(
+      new Set(firstCol.map((v) => String(v).trim()).filter(Boolean))
     );
 
     console.log(`Processing ${licenseNumbers.length} license numbers...`);
@@ -54,14 +92,6 @@ export const verifyLicences = async (req: Request, res: Response) => {
       await new Promise((r) => setTimeout(r, 1000)); // prevent rate limiting
     }
 
-    // Convert to Excel
-    const worksheet = XLSX.utils.json_to_sheet(results);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Results");
-
-    const outputPath = path.join("uploads", `nsw_results_${Date.now()}.xlsx`);
-    XLSX.writeFile(workbook, outputPath);
-
     const sanitizedResults = results.map(
       ({ headerLayoutNew, ...rest }) => rest
     );
@@ -70,9 +100,6 @@ export const verifyLicences = async (req: Request, res: Response) => {
       message: "License Verification Completed",
       data: sanitizedResults,
     });
-    // res.download(outputPath, "nsw_license_results.xlsx", (err) => {
-    //   if (err) console.error("Download error:", err);
-    // });
   } catch (error: any) {
     console.error(error);
     res.status(500).json({ error: error.message || "Internal Server Error" });
